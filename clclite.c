@@ -110,7 +110,7 @@ volatile int have_sigint = 0;
 
 /* server socket */
 static char* host = "localhost";
-static char* port = "5000";
+static char* port = "6969";
 static int sock;
 static size_t sent_bytes = 0;
 static size_t recv_bytes = 0;
