@@ -62,7 +62,7 @@ static struct TERMINAL
 } terminal;
 
 /* edit buffer */
-#define EDITBUF_MAX 1024
+#define EDITBUF_MAX 1001
 
 static struct EDITBUF 
 {
@@ -84,7 +84,7 @@ static void editbuf_end();
 
 /* screen buffer */
 #define MAXLINES 100
-#define MAX_LINE_LENGTH 1024
+#define MAX_LINE_LENGTH 1001
 
 char sbuffer[MAXLINES][MAX_LINE_LENGTH];
 
@@ -96,7 +96,7 @@ static int updowntoggle;
 static int running = 1;
 
 /* banner buffer */
-static char banner[1024];
+static char banner[1001];
 static int autobanner = 1;
 
 /* windows */
@@ -324,7 +324,6 @@ static void editbuf_display ()
 	mvwaddnstr(win_input, 0, 0, editbuf.buf + editbuf.start, editbuf.size - editbuf.start);
 	wmove(win_input, 0, editbuf.pos);
 }
-
 
 /* paint banner */
 static void paint_banner (void) 
