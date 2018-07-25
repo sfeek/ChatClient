@@ -526,17 +526,22 @@ static void on_text_plain (const char* text, size_t len)
 }
 
 /* process text into virtual terminal */
-static void send_text_ansi (const char* text, size_t len) {
+static void send_text_ansi (const char* text, size_t len) 
+{
 	size_t i;
 	for (i = 0; i < len; ++i) {
 		switch (terminal.state) {
 			case TERM_ASCII:
 				/* begin escape sequence */
 				if (text[i] == 27)
+				{
 					terminal.state = TERM_ESC;
+				}
 				/* just show it */
 				else if (text[i] != '\r')
+				{
 					waddch(win_main, text[i]);
+				}
 				break;
 			case TERM_ESC:
 				/* run of mod setting commands */
@@ -582,7 +587,11 @@ static void send_text_ansi (const char* text, size_t len) {
 static void on_text_ansi (const char* text, size_t len) 
 {
 	size_t i;
-	for (i = 0; i < len; ++i) last = add_char_buffer(sbuffer,text[i], last);
+	for (i = 0; i < len; ++i)
+	{
+		if (text[i]=='\007') { beep(); continue; } /* If we have an incoming bell, play it and skip it*/
+		last = add_char_buffer(sbuffer,text[i], last);
+	}
 }
 
 /* attempt to connect to the requested hostname on the request port */
