@@ -414,8 +414,10 @@ static void do_send (const char* bytes, size_t len)
 }
 
 /* process user input */
-static void on_key (int key) 
+static int on_key (int key) 
 {
+	int full_refresh = 0;
+
 	/* special keys */
 	if (key >= KEY_MIN && key <= KEY_MAX) 
 	{
@@ -424,6 +426,7 @@ static void on_key (int key)
 			case KEY_ENTER: /* send */
 				send_line(editbuf.buf, editbuf.size);
 				editbuf_set("");
+				full_refresh = 1;
 				break;
 
 			case KEY_BACKSPACE: 
@@ -454,24 +457,28 @@ static void on_key (int key)
 				updowntoggle = 1;
 				windowpos++;
 				if (windowpos > MAXLINES ) windowpos = MAXLINES;
+				full_refresh = 1;
 				break;
 
 			case KEY_NPAGE:
 				updowntoggle = 1;
 				windowpos+=10;
 				if (windowpos > MAXLINES ) windowpos = MAXLINES;
+				full_refresh = 1;
 				break;
 
 			case KEY_UP:
 				updowntoggle = 1;
 				windowpos--;
 				if (windowpos < 0) windowpos = 0;
+				full_refresh = 1;
 				break;
 
 			case KEY_PPAGE:
 				updowntoggle = 1;
 				windowpos-=10;
 				if (windowpos < 0) windowpos = 0;
+				full_refresh = 1;
 				break;
 		}
 	} 
@@ -491,6 +498,7 @@ static void on_key (int key)
 
 	/* draw input */
 	editbuf_display();
+	return full_refresh;
 }
 
 /* perform a terminal escape */
@@ -768,7 +776,14 @@ int main (int argc, char** argv)
 		{
 			int key = wgetch(win_input);
 			if (key != ERR)
-				on_key(key);
+			{
+				if (on_key(key)==0)
+				{
+					wnoutrefresh(win_input);
+					doupdate();
+					continue;
+				}
+			}
 		}
 
 		/* process input data */
