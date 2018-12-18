@@ -180,7 +180,7 @@ int add_char_buffer(char buffer[][MAX_LINE_LENGTH], char c, int lastline)
 /* Print buffer to the screen */
 int print_buffer(char buffer[][MAX_LINE_LENGTH], int startline, int endline)
 {
-	wclear(win_main); 
+    werase(win_main); 
 
     if (startline < 0) startline = 0;
     if (startline > endline) return 1;
@@ -229,14 +229,15 @@ static void editbuf_set (const char* text)
 static void editbuf_insert (int ch) 
 {
 	/* ensure we have space */
-	if (editbuf.size == EDITBUF_MAX)
+	if (editbuf.size == EDITBUF_MAX - 1)
 		return;
 
 	/* if we're at the end, just append the character */
 	if (editbuf.pos == editbuf.size) 
 	{
 		editbuf.buf[editbuf.pos] = ch;
-		editbuf.pos = ++editbuf.size;
+		++editbuf.pos;
+		++editbuf.size;
 		return;
 	}
 
@@ -252,12 +253,16 @@ static void editbuf_bs ()
 {
 	/* if we're at the beginning, do nothing */
 	if (editbuf.pos == 0)
+	{
+		editbuf.pos = 0;
 		return;
+	}
 
 	/* if we're at the end, just decrement pos and size */
 	if (editbuf.pos == editbuf.size) 
 	{
-		editbuf.pos = --editbuf.size;
+		--editbuf.pos;
+		--editbuf.size;
 		return;
 	}
 
@@ -274,10 +279,9 @@ static void editbuf_del ()
 	if (editbuf.pos == editbuf.size)
 		return;
 
-	/* if we're at the end, just decrement pos and size */
+	/* if we're one from the end, just decrement pos and size */
 	if (editbuf.pos == editbuf.size - 1) 
 	{
-		--editbuf.pos;
 		--editbuf.size;
 		return;
 	}
@@ -315,12 +319,12 @@ static void editbuf_curright ()
 /* display the edit buffer in win_input */
 static void editbuf_display () 
 {
-	if (editbuf.pos >= COLS)
-		editbuf.start = editbuf.pos - COLS;
+	if (editbuf.pos > COLS - 1 )
+		editbuf.start = editbuf.pos - COLS + 1;
 	else
 		editbuf.start = 0;
 
-	wclear(win_input);
+	werase(win_input);
 	mvwaddnstr(win_input, 0, 0, editbuf.buf + editbuf.start, editbuf.size - editbuf.start);
 	wmove(win_input, 0, editbuf.pos);
 }
@@ -334,7 +338,7 @@ static void paint_banner (void)
 		snprintf(banner, sizeof(banner), "%s:%s - (%s)", host, port, sock == -1 ? "disconnected" : "connected");
 	}
 
-	wclear(win_banner);
+	werase(win_banner);
 	mvwaddstr(win_banner, 0, 0, banner);
 }
 
@@ -414,10 +418,8 @@ static void do_send (const char* bytes, size_t len)
 }
 
 /* process user input */
-static int on_key (int key) 
+static void on_key (int key) 
 {
-	int full_refresh = 0;
-
 	/* special keys */
 	if (key >= KEY_MIN && key <= KEY_MAX) 
 	{
@@ -426,7 +428,6 @@ static int on_key (int key)
 			case KEY_ENTER: /* send */
 				send_line(editbuf.buf, editbuf.size);
 				editbuf_set("");
-				full_refresh = 1;
 				break;
 
 			case KEY_BACKSPACE: 
@@ -456,29 +457,25 @@ static int on_key (int key)
 			case KEY_DOWN:
 				updowntoggle = 1;
 				windowpos++;
-				if (windowpos > MAXLINES ) windowpos = MAXLINES;
-				full_refresh = 1;
+				if (windowpos >= MAXLINES ) windowpos = MAXLINES;
 				break;
 
 			case KEY_NPAGE:
 				updowntoggle = 1;
 				windowpos+=10;
-				if (windowpos > MAXLINES ) windowpos = MAXLINES;
-				full_refresh = 1;
+				if (windowpos >= MAXLINES ) windowpos = MAXLINES;
 				break;
 
 			case KEY_UP:
 				updowntoggle = 1;
 				windowpos--;
-				if (windowpos < 0) windowpos = 0;
-				full_refresh = 1;
+				if (windowpos <= 0) windowpos = 0;
 				break;
 
 			case KEY_PPAGE:
 				updowntoggle = 1;
 				windowpos-=10;
-				if (windowpos < 0) windowpos = 0;
-				full_refresh = 1;
+				if (windowpos <= 0) windowpos = 0;
 				break;
 		}
 	} 
@@ -498,7 +495,6 @@ static int on_key (int key)
 
 	/* draw input */
 	editbuf_display();
-	return full_refresh;
 }
 
 /* perform a terminal escape */
@@ -701,6 +697,7 @@ int main (int argc, char** argv)
 
 	idlok(win_main, TRUE);
 	scrollok(win_main, TRUE);
+	scrollok(win_input, FALSE);
 
 	nodelay(win_input, FALSE);
 	keypad(win_input, TRUE);
@@ -775,15 +772,7 @@ int main (int argc, char** argv)
 		if (fds[0].revents & POLLIN) 
 		{
 			int key = wgetch(win_input);
-			if (key != ERR)
-			{
-				if (on_key(key)==0)
-				{
-					wnoutrefresh(win_input);
-					doupdate();
-					continue;
-				}
-			}
+			if (key != ERR) on_key(key);
 		}
 
 		/* process input data */
